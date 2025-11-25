@@ -1,0 +1,1130 @@
+{
+  "version": "1.0",
+  "baseUrl": "/api/v1",
+  "categories": [
+    {
+      "id": "health",
+      "name": "Health & Diagnostics",
+      "description": "Endpoints for checking system health and connectivity"
+    },
+    {
+      "id": "user",
+      "name": "User Management",
+      "description": "Manage user profile and settings"
+    },
+    {
+      "id": "mail",
+      "name": "Mail Operations",
+      "description": "Send, receive, and manage email messages via IMAP"
+    },
+    {
+      "id": "biolink",
+      "name": "Biolink",
+      "description": "Create and manage your custom biolink page with social links"
+    },
+    {
+      "id": "media",
+      "name": "Media Management",
+      "description": "Upload, store, and manage files up to 100MB"
+    },
+    {
+      "id": "paste",
+      "name": "Paste",
+      "description": "Create and share code snippets or text content up to 10MB"
+    }
+  ],
+  "endpoints": [
+    {
+      "id": "ping",
+      "method": "GET",
+      "path": "/ping",
+      "category": "health",
+      "title": "Health Check",
+      "description": "Simple health check endpoint that returns server status and uptime",
+      "authentication": false,
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Server is healthy",
+          "example": {
+            "status": "ok",
+            "timestamp": "2025-11-24T12:00:00.000Z",
+            "uptime": 86400,
+            "userAgent": "Mozilla/5.0..."
+          }
+        }
+      ]
+    },
+    {
+      "id": "db-test",
+      "method": "GET",
+      "path": "/db-test",
+      "category": "health",
+      "title": "Database Connection Test",
+      "description": "Test database connectivity",
+      "authentication": false,
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Database connection successful",
+          "example": {
+            "status": "Connected to database successfully!"
+          }
+        },
+        {
+          "statusCode": 500,
+          "description": "Database connection failed",
+          "example": {
+            "status": "Failed to connect",
+            "error": "Connection timeout"
+          }
+        }
+      ]
+    },
+    {
+      "id": "user-profile-update",
+      "method": "PATCH",
+      "path": "/user/profile",
+      "category": "user",
+      "title": "Update User Profile",
+      "description": "Update user display name and avatar URL",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "displayName": {
+            "name": "displayName",
+            "type": "string",
+            "required": false,
+            "description": "User's display name (1-255 characters)",
+            "example": "John Doe"
+          },
+          "avatarUrl": {
+            "name": "avatarUrl",
+            "type": "string",
+            "required": false,
+            "description": "URL to user's avatar image (max 255 characters, can be empty to clear)",
+            "example": "https://example.com/avatar.jpg"
+          }
+        },
+        "example": {
+          "displayName": "John Doe",
+          "avatarUrl": "https://example.com/avatar.jpg"
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Profile updated successfully",
+          "example": {
+            "success": true,
+            "user": {
+              "cuid": "abc123",
+              "email": "user@example.com",
+              "displayName": "John Doe",
+              "avatarUrl": "https://example.com/avatar.jpg"
+            }
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Invalid input data"
+        },
+        {
+          "statusCode": 401,
+          "description": "Not authenticated"
+        }
+      ]
+    },
+    {
+      "id": "mail-list",
+      "method": "GET",
+      "path": "/mail/list",
+      "category": "mail",
+      "title": "List Messages",
+      "description": "Retrieve list of messages from a specific mailbox",
+      "authentication": true,
+      "queryParameters": [
+        {
+          "name": "box",
+          "type": "string",
+          "required": true,
+          "description": "Mailbox to list (inbox, sent, drafts, trash, archive)",
+          "example": "inbox"
+        }
+      ],
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "List of messages retrieved",
+          "example": {
+            "messages": [
+              {
+                "uid": 123,
+                "subject": "Hello World",
+                "from": [
+                  {
+                    "name": "Sender",
+                    "address": "sender@example.com"
+                  }
+                ],
+                "date": "2025-11-24T12:00:00.000Z",
+                "flags": [
+                  "\\Seen"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Missing box parameter"
+        },
+        {
+          "statusCode": 401,
+          "description": "Not authenticated"
+        }
+      ]
+    },
+    {
+      "id": "mail-message",
+      "method": "GET",
+      "path": "/mail/message",
+      "category": "mail",
+      "title": "Get Message Details",
+      "description": "Retrieve full message content including HTML and text",
+      "authentication": true,
+      "queryParameters": [
+        {
+          "name": "uid",
+          "type": "string",
+          "required": true,
+          "description": "Message UID",
+          "example": "123"
+        },
+        {
+          "name": "box",
+          "type": "string",
+          "required": false,
+          "description": "Mailbox name (defaults to INBOX)",
+          "example": "INBOX"
+        }
+      ],
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Message retrieved successfully",
+          "example": {
+            "uid": "123",
+            "envelope": {},
+            "raw": "...",
+            "html": "<p>Email content</p>",
+            "text": "Email content"
+          }
+        },
+        {
+          "statusCode": 404,
+          "description": "Message not found"
+        }
+      ]
+    },
+    {
+      "id": "mail-send",
+      "method": "POST",
+      "path": "/mail/send",
+      "category": "mail",
+      "title": "Send Email",
+      "description": "Send an email via AWS SES SMTP",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "to": {
+            "name": "to",
+            "type": "string",
+            "required": true,
+            "description": "Recipient email address",
+            "example": "recipient@example.com"
+          },
+          "cc": {
+            "name": "cc",
+            "type": "string",
+            "required": false,
+            "description": "CC email addresses",
+            "example": "cc@example.com"
+          },
+          "bcc": {
+            "name": "bcc",
+            "type": "string",
+            "required": false,
+            "description": "BCC email addresses",
+            "example": "bcc@example.com"
+          },
+          "subject": {
+            "name": "subject",
+            "type": "string",
+            "required": true,
+            "description": "Email subject",
+            "example": "Hello World"
+          },
+          "body": {
+            "name": "body",
+            "type": "string",
+            "required": true,
+            "description": "Email body (plain text, newlines converted to <br>)",
+            "example": "This is the email body"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Email sent successfully",
+          "example": {
+            "success": true,
+            "messageId": "<msg-id@example.com>",
+            "accepted": [
+              "recipient@example.com"
+            ],
+            "response": "250 Message accepted"
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Missing required fields"
+        },
+        {
+          "statusCode": 500,
+          "description": "Failed to send email"
+        }
+      ]
+    },
+    {
+      "id": "mail-delete",
+      "method": "POST",
+      "path": "/mail/delete",
+      "category": "mail",
+      "title": "Delete Message",
+      "description": "Move message to trash or permanently delete if already in trash",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "uid": {
+            "name": "uid",
+            "type": "string",
+            "required": true,
+            "description": "Message UID",
+            "example": "123"
+          },
+          "box": {
+            "name": "box",
+            "type": "string",
+            "required": true,
+            "description": "Current mailbox name",
+            "example": "INBOX"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Message deleted successfully",
+          "example": {
+            "success": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "mail-bulk-delete",
+      "method": "POST",
+      "path": "/mail/bulk-delete",
+      "category": "mail",
+      "title": "Bulk Delete Messages",
+      "description": "Delete multiple messages at once",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "uids": {
+            "name": "uids",
+            "type": "array",
+            "required": true,
+            "description": "Array of message UIDs to delete",
+            "example": [
+              123,
+              456,
+              789
+            ]
+          },
+          "mailbox": {
+            "name": "mailbox",
+            "type": "string",
+            "required": true,
+            "description": "Mailbox name",
+            "example": "INBOX"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Messages deleted successfully",
+          "example": {
+            "success": true,
+            "deleted": 3
+          }
+        }
+      ]
+    },
+    {
+      "id": "mail-recover",
+      "method": "POST",
+      "path": "/mail/recover",
+      "category": "mail",
+      "title": "Recover Message",
+      "description": "Recover a message from trash back to inbox",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "uid": {
+            "name": "uid",
+            "type": "string",
+            "required": true,
+            "description": "Message UID",
+            "example": "123"
+          },
+          "box": {
+            "name": "box",
+            "type": "string",
+            "required": true,
+            "description": "Must be 'Trash'",
+            "example": "Trash"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Message recovered successfully",
+          "example": {
+            "success": true
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Can only recover from Trash"
+        }
+      ]
+    },
+    {
+      "id": "mail-bulk-recover",
+      "method": "POST",
+      "path": "/mail/bulk-recover",
+      "category": "mail",
+      "title": "Bulk Recover Messages",
+      "description": "Recover multiple messages from trash",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "uids": {
+            "name": "uids",
+            "type": "array",
+            "required": true,
+            "description": "Array of message UIDs to recover",
+            "example": [
+              123,
+              456
+            ]
+          },
+          "mailbox": {
+            "name": "mailbox",
+            "type": "string",
+            "required": true,
+            "description": "Must be 'Trash'",
+            "example": "Trash"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Messages recovered successfully",
+          "example": {
+            "success": true,
+            "recovered": 2
+          }
+        }
+      ]
+    },
+    {
+      "id": "mail-mark-read",
+      "method": "POST",
+      "path": "/mail/mark-read",
+      "category": "mail",
+      "title": "Mark Read/Unread",
+      "description": "Mark a message as read or unread",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "uid": {
+            "name": "uid",
+            "type": "string",
+            "required": true,
+            "description": "Message UID",
+            "example": "123"
+          },
+          "box": {
+            "name": "box",
+            "type": "string",
+            "required": true,
+            "description": "Mailbox name",
+            "example": "INBOX"
+          },
+          "read": {
+            "name": "read",
+            "type": "boolean",
+            "required": true,
+            "description": "true to mark read, false to mark unread",
+            "example": true
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Message updated successfully",
+          "example": {
+            "success": true,
+            "uid": 123,
+            "read": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "mail-unread-count",
+      "method": "GET",
+      "path": "/mail/unread-count",
+      "category": "mail",
+      "title": "Get Unread Count",
+      "description": "Get count of unread messages in inbox",
+      "authentication": true,
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Unread count retrieved",
+          "example": {
+            "count": 5
+          }
+        }
+      ]
+    },
+    {
+      "id": "biolink-check-slug",
+      "method": "GET",
+      "path": "/biolink/check-slug",
+      "category": "biolink",
+      "title": "Check Slug Availability",
+      "description": "Check if a biolink slug is available",
+      "authentication": false,
+      "queryParameters": [
+        {
+          "name": "slug",
+          "type": "string",
+          "required": true,
+          "description": "Slug to check",
+          "example": "myusername"
+        }
+      ],
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Slug availability status",
+          "example": {
+            "available": true
+          }
+        }
+      ],
+      "notes": [
+        "Reserved slugs: api, app, auth, static, admin, dashboard, settings, login, logout, signup, signin, register, about, contact, help, support, terms, privacy, legal, docs, blog, news, status, health, robots.txt, sitemap.xml, favicon.ico"
+      ]
+    },
+    {
+      "id": "biolink-get-create",
+      "method": "GET",
+      "path": "/biolink",
+      "category": "biolink",
+      "title": "Get Biolink",
+      "description": "Get current user's biolink configuration",
+      "authentication": true,
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Biolink retrieved"
+        }
+      ]
+    },
+    {
+      "id": "biolink-update",
+      "method": "POST",
+      "path": "/biolink",
+      "category": "biolink",
+      "title": "Create/Update Biolink",
+      "description": "Create or update biolink profile",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "slug": {
+            "name": "slug",
+            "type": "string",
+            "required": true,
+            "description": "URL-safe slug (lowercase letters, numbers, hyphens, underscores only)",
+            "example": "myusername"
+          },
+          "displayName": {
+            "name": "displayName",
+            "type": "string",
+            "required": false,
+            "description": "Display name (max 255 characters)",
+            "example": "John Doe"
+          },
+          "avatarUrl": {
+            "name": "avatarUrl",
+            "type": "string",
+            "required": false,
+            "description": "Avatar image URL (max 255 characters)",
+            "example": "https://example.com/avatar.jpg"
+          },
+          "backgroundUrl": {
+            "name": "backgroundUrl",
+            "type": "string",
+            "required": false,
+            "description": "Background image URL (max 255 characters)",
+            "example": "https://example.com/bg.jpg"
+          },
+          "bio": {
+            "name": "bio",
+            "type": "string",
+            "required": false,
+            "description": "Bio text (max 500 characters)",
+            "example": "Software developer and designer"
+          },
+          "isPublic": {
+            "name": "isPublic",
+            "type": "boolean",
+            "required": false,
+            "description": "Whether biolink is publicly visible",
+            "example": true
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Biolink created/updated successfully",
+          "example": {
+            "success": true,
+            "biolink": {
+              "slug": "myusername",
+              "displayName": "John Doe",
+              "isPublic": true
+            }
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Invalid slug or slug already taken"
+        }
+      ]
+    },
+    {
+      "id": "biolink-links-create",
+      "method": "POST",
+      "path": "/biolink/links",
+      "category": "biolink",
+      "title": "Add Biolink Link",
+      "description": "Add a new link to biolink",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "url": {
+            "name": "url",
+            "type": "string",
+            "required": true,
+            "description": "Link URL (1-2048 characters, must be valid URL)",
+            "example": "https://twitter.com/username"
+          },
+          "title": {
+            "name": "title",
+            "type": "string",
+            "required": false,
+            "description": "Link title (alphanumeric only, max 255 characters)",
+            "example": "Twitter"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Link added successfully",
+          "example": {
+            "success": true,
+            "link": {
+              "id": 1,
+              "url": "https://twitter.com/username",
+              "title": "Twitter",
+              "order": 0
+            }
+          }
+        },
+        {
+          "statusCode": 404,
+          "description": "Biolink not found"
+        }
+      ]
+    },
+    {
+      "id": "biolink-links-delete",
+      "method": "DELETE",
+      "path": "/biolink/links",
+      "category": "biolink",
+      "title": "Delete Biolink Link",
+      "description": "Remove a link from biolink",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "linkId": {
+            "name": "linkId",
+            "type": "number",
+            "required": true,
+            "description": "Link ID to delete",
+            "example": 1
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Link deleted successfully",
+          "example": {
+            "success": true
+          }
+        },
+        {
+          "statusCode": 404,
+          "description": "Link not found"
+        }
+      ]
+    },
+    {
+      "id": "media-upload",
+      "method": "POST",
+      "path": "/media/upload",
+      "category": "media",
+      "title": "Upload File",
+      "description": "Upload a file to cloud storage",
+      "authentication": true,
+      "rateLimit": {
+        "max": 20,
+        "windowMs": 3600000,
+        "description": "20 uploads per hour"
+      },
+      "requestBody": {
+        "contentType": "multipart/form-data",
+        "schema": {
+          "file": {
+            "name": "file",
+            "type": "object",
+            "required": true,
+            "description": "File to upload (max 100MB)",
+            "example": "file.jpg"
+          },
+          "public": {
+            "name": "public",
+            "type": "boolean",
+            "required": false,
+            "description": "Whether file should be publicly accessible",
+            "example": true
+          },
+          "encrypted": {
+            "name": "encrypted",
+            "type": "boolean",
+            "required": false,
+            "description": "Whether file is encrypted",
+            "example": false
+          },
+          "originalMimeType": {
+            "name": "originalMimeType",
+            "type": "string",
+            "required": false,
+            "description": "Original MIME type (for encrypted files)",
+            "example": "image/jpeg"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "File uploaded successfully",
+          "example": {
+            "success": true,
+            "file": {
+              "id": 1,
+              "fileName": "image.jpg",
+              "fileSize": 1024000,
+              "mimeType": "image/jpeg",
+              "url": "/file/abc123",
+              "createdAt": "2025-11-24T12:00:00.000Z"
+            }
+          }
+        },
+        {
+          "statusCode": 413,
+          "description": "File too large or storage quota exceeded"
+        }
+      ],
+      "notes": [
+        "Maximum file size: 100MB",
+        "Storage quota: 200MB per user",
+        "Allowed types: image/*, video/*, audio/*, application/pdf, text/*"
+      ]
+    },
+    {
+      "id": "media-list",
+      "method": "GET",
+      "path": "/media/list",
+      "category": "media",
+      "title": "List Media Files",
+      "description": "Get paginated list of user's uploaded files",
+      "authentication": true,
+      "queryParameters": [
+        {
+          "name": "page",
+          "type": "number",
+          "required": false,
+          "description": "Page number (default: 1)",
+          "example": 1
+        },
+        {
+          "name": "limit",
+          "type": "number",
+          "required": false,
+          "description": "Items per page (default: 20)",
+          "example": 20
+        },
+        {
+          "name": "sortBy",
+          "type": "string",
+          "required": false,
+          "description": "Sort field: createdAt, fileSize, fileName (default: createdAt)",
+          "example": "createdAt"
+        },
+        {
+          "name": "sortOrder",
+          "type": "string",
+          "required": false,
+          "description": "Sort order: asc, desc (default: desc)",
+          "example": "desc"
+        }
+      ],
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Files retrieved successfully",
+          "example": {
+            "files": [
+              {
+                "id": 1,
+                "fileName": "image.jpg",
+                "fileSize": 1024000,
+                "mimeType": "image/jpeg",
+                "isPublic": true,
+                "slug": "abc123",
+                "downloads": 5,
+                "url": "/file/abc123",
+                "createdAt": "2025-11-24T12:00:00.000Z"
+              }
+            ],
+            "pagination": {
+              "page": 1,
+              "limit": 20,
+              "total": 50,
+              "totalPages": 3
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "media-get",
+      "method": "GET",
+      "path": "/media/[id]",
+      "category": "media",
+      "title": "Download File",
+      "description": "Download a specific file by ID",
+      "authentication": true,
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "File downloaded successfully"
+        },
+        {
+          "statusCode": 403,
+          "description": "Access denied"
+        },
+        {
+          "statusCode": 404,
+          "description": "File not found"
+        },
+        {
+          "statusCode": 410,
+          "description": "File has expired"
+        }
+      ]
+    },
+    {
+      "id": "media-delete",
+      "method": "DELETE",
+      "path": "/media/[id]",
+      "category": "media",
+      "title": "Delete File",
+      "description": "Delete a file from storage",
+      "authentication": true,
+      "responses": [
+        {
+          "statusCode": 204,
+          "description": "File deleted successfully"
+        },
+        {
+          "statusCode": 403,
+          "description": "Access denied"
+        },
+        {
+          "statusCode": 404,
+          "description": "File not found"
+        }
+      ]
+    },
+    {
+      "id": "paste-create",
+      "method": "POST",
+      "path": "/paste/create",
+      "category": "paste",
+      "title": "Create Paste",
+      "description": "Create a new paste/snippet",
+      "authentication": true,
+      "rateLimit": {
+        "max": 30,
+        "windowMs": 3600000,
+        "description": "30 pastes per hour"
+      },
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "content": {
+            "name": "content",
+            "type": "string",
+            "required": true,
+            "description": "Paste content (max 10MB)",
+            "example": "console.log('Hello World');"
+          },
+          "title": {
+            "name": "title",
+            "type": "string",
+            "required": false,
+            "description": "Paste title",
+            "example": "My Code Snippet"
+          },
+          "language": {
+            "name": "language",
+            "type": "string",
+            "required": false,
+            "description": "Programming language for syntax highlighting",
+            "example": "javascript"
+          },
+          "isPublic": {
+            "name": "isPublic",
+            "type": "boolean",
+            "required": false,
+            "description": "Whether paste is publicly accessible (default: false)",
+            "example": false
+          },
+          "isEncrypted": {
+            "name": "isEncrypted",
+            "type": "boolean",
+            "required": false,
+            "description": "Whether paste is encrypted (default: false)",
+            "example": false
+          },
+          "expiresIn": {
+            "name": "expiresIn",
+            "type": "number",
+            "required": false,
+            "description": "Expiration time in seconds",
+            "example": 3600
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Paste created successfully",
+          "example": {
+            "success": true,
+            "paste": {
+              "id": 1,
+              "slug": "abc123xy",
+              "url": "/paste/abc123xy",
+              "title": "My Code Snippet",
+              "createdAt": "2025-11-24T12:00:00.000Z",
+              "expiresAt": null
+            }
+          }
+        },
+        {
+          "statusCode": 413,
+          "description": "Paste too large or storage quota exceeded"
+        }
+      ],
+      "notes": [
+        "Maximum paste size: 10MB",
+        "Content over 64KB stored in R2, smaller content stored inline in database",
+        "Storage quota: 200MB total per user (shared with media files)"
+      ]
+    },
+    {
+      "id": "paste-list",
+      "method": "GET",
+      "path": "/paste/list",
+      "category": "paste",
+      "title": "List Pastes",
+      "description": "Get paginated list of user's pastes",
+      "authentication": true,
+      "queryParameters": [
+        {
+          "name": "page",
+          "type": "number",
+          "required": false,
+          "description": "Page number (default: 1)",
+          "example": 1
+        },
+        {
+          "name": "limit",
+          "type": "number",
+          "required": false,
+          "description": "Items per page (default: 20)",
+          "example": 20
+        },
+        {
+          "name": "sortBy",
+          "type": "string",
+          "required": false,
+          "description": "Sort field: createdAt, views, title (default: createdAt)",
+          "example": "createdAt"
+        },
+        {
+          "name": "sortOrder",
+          "type": "string",
+          "required": false,
+          "description": "Sort order: asc, desc (default: desc)",
+          "example": "desc"
+        }
+      ],
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Pastes retrieved successfully",
+          "example": {
+            "pastes": [
+              {
+                "id": 1,
+                "slug": "abc123xy",
+                "title": "My Code Snippet",
+                "isPublic": false,
+                "isEncrypted": false,
+                "views": 10,
+                "url": "/paste/abc123xy",
+                "createdAt": "2025-11-24T12:00:00.000Z",
+                "expiresAt": null
+              }
+            ],
+            "pagination": {
+              "page": 1,
+              "limit": 20,
+              "total": 15,
+              "totalPages": 1
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "paste-get",
+      "method": "GET",
+      "path": "/paste/[slug]",
+      "category": "paste",
+      "title": "Get Paste",
+      "description": "Retrieve paste content by slug",
+      "authentication": true,
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Paste retrieved successfully",
+          "example": {
+            "id": 1,
+            "slug": "abc123xy",
+            "title": "My Code Snippet",
+            "content": "console.log('Hello World');",
+            "isPublic": false,
+            "views": 11,
+            "createdAt": "2025-11-24T12:00:00.000Z",
+            "expiresAt": null
+          }
+        },
+        {
+          "statusCode": 403,
+          "description": "Access denied"
+        },
+        {
+          "statusCode": 404,
+          "description": "Paste not found"
+        },
+        {
+          "statusCode": 410,
+          "description": "Paste has expired"
+        }
+      ]
+    },
+    {
+      "id": "paste-delete",
+      "method": "DELETE",
+      "path": "/paste/[slug]",
+      "category": "paste",
+      "title": "Delete Paste",
+      "description": "Delete a paste",
+      "authentication": true,
+      "responses": [
+        {
+          "statusCode": 204,
+          "description": "Paste deleted successfully"
+        },
+        {
+          "statusCode": 403,
+          "description": "Access denied"
+        },
+        {
+          "statusCode": 404,
+          "description": "Paste not found"
+        }
+      ]
+    }
+  ]
+}
