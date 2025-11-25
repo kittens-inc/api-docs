@@ -149,7 +149,7 @@
           "name": "box",
           "type": "string",
           "required": true,
-          "description": "Mailbox to list (inbox, sent, drafts, trash, archive)",
+          "description": "Mailbox to list (inbox, sent, trash, archive)",
           "example": "inbox"
         }
       ],
