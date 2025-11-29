@@ -31,6 +31,11 @@
       "id": "paste",
       "name": "Paste",
       "description": "Create and share code snippets or text content up to 10MB"
+    },
+    {
+      "id": "apikeys",
+      "name": "API Keys",
+      "description": "Manage API keys for programmatic access to your account"
     }
   ],
   "endpoints": [
@@ -525,6 +530,109 @@
       ]
     },
     {
+      "id": "mail-archive",
+      "method": "POST",
+      "path": "/mail/archive",
+      "category": "mail",
+      "title": "Archive Message",
+      "description": "Move a message to the archive mailbox",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "uid": {
+            "name": "uid",
+            "type": "string",
+            "required": true,
+            "description": "Message UID",
+            "example": "123"
+          },
+          "box": {
+            "name": "box",
+            "type": "string",
+            "required": true,
+            "description": "Current mailbox name",
+            "example": "INBOX"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Message archived successfully",
+          "example": {
+            "success": true
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Missing UID or box parameter"
+        },
+        {
+          "statusCode": 401,
+          "description": "Not authenticated"
+        },
+        {
+          "statusCode": 500,
+          "description": "Failed to archive message"
+        }
+      ]
+    },
+    {
+      "id": "mail-bulk-archive",
+      "method": "POST",
+      "path": "/mail/bulk-archive",
+      "category": "mail",
+      "title": "Bulk Archive Messages",
+      "description": "Archive multiple messages at once",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "uids": {
+            "name": "uids",
+            "type": "array",
+            "required": true,
+            "description": "Array of message UIDs to archive",
+            "example": [
+              123,
+              456,
+              789
+            ]
+          },
+          "mailbox": {
+            "name": "mailbox",
+            "type": "string",
+            "required": true,
+            "description": "Source mailbox name",
+            "example": "INBOX"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Messages archived successfully",
+          "example": {
+            "success": true,
+            "archived": 3
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Invalid UIDs or missing mailbox"
+        },
+        {
+          "statusCode": 401,
+          "description": "Not authenticated"
+        },
+        {
+          "statusCode": 500,
+          "description": "Failed to archive messages"
+        }
+      ]
+    },
+    {
       "id": "biolink-check-slug",
       "method": "GET",
       "path": "/biolink/check-slug",
@@ -848,7 +956,7 @@
                 "mimeType": "image/jpeg",
                 "isPublic": true,
                 "slug": "abc123",
-                "downloads": 5,
+                "views": 5,
                 "url": "/file/abc123",
                 "createdAt": "2025-11-24T12:00:00.000Z"
               }
@@ -1124,6 +1232,157 @@
           "statusCode": 404,
           "description": "Paste not found"
         }
+      ]
+    },
+    {
+      "id": "api-keys-list",
+      "method": "GET",
+      "path": "/user/api-keys",
+      "category": "apikeys",
+      "title": "List API Keys",
+      "description": "Get list of all API keys for the authenticated user",
+      "authentication": true,
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "API keys retrieved successfully",
+          "example": {
+            "apiKeys": [
+              {
+                "id": 1,
+                "keyPrefix": "kittens_abc12345",
+                "name": "My API Key",
+                "lastUsedAt": "2025-11-24T12:00:00.000Z",
+                "expiresAt": null,
+                "createdAt": "2025-11-20T10:00:00.000Z"
+              }
+            ]
+          }
+        },
+        {
+          "statusCode": 401,
+          "description": "Not authenticated"
+        },
+        {
+          "statusCode": 404,
+          "description": "Account not found"
+        }
+      ],
+      "notes": [
+        "Only returns key prefixes for security - full keys are never retrievable after creation"
+      ]
+    },
+    {
+      "id": "api-keys-create",
+      "method": "POST",
+      "path": "/user/api-keys",
+      "category": "apikeys",
+      "title": "Create API Key",
+      "description": "Create a new API key for programmatic access",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "name": {
+            "name": "name",
+            "type": "string",
+            "required": true,
+            "description": "Name for the API key (1-100 characters)",
+            "example": "My Integration Key"
+          },
+          "expiresInDays": {
+            "name": "expiresInDays",
+            "type": "number",
+            "required": false,
+            "description": "Number of days until expiration (optional, no expiration if not provided)",
+            "example": 90
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "API key created successfully",
+          "example": {
+            "apiKey": {
+              "id": 1,
+              "keyPrefix": "kittens_abc12345",
+              "name": "My Integration Key",
+              "expiresAt": "2025-02-22T12:00:00.000Z",
+              "createdAt": "2025-11-24T12:00:00.000Z",
+              "key": "kittens_abc12345678901234567890abcdef1234567890abcdef"
+            },
+            "warning": "Save this API key now. You will not be able to see it again."
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Invalid input or maximum API keys reached (5 per user)"
+        },
+        {
+          "statusCode": 401,
+          "description": "Not authenticated"
+        },
+        {
+          "statusCode": 403,
+          "description": "API keys can only be created via session authentication"
+        }
+      ],
+      "notes": [
+        "Maximum 5 API keys per user account",
+        "API keys can only be created via session authentication, not with another API key",
+        "Full API key is only returned once during creation",
+        "Key format: kittens_<32 random bytes as base64url>"
+      ]
+    },
+    {
+      "id": "api-keys-delete",
+      "method": "DELETE",
+      "path": "/user/api-keys",
+      "category": "apikeys",
+      "title": "Delete API Key",
+      "description": "Delete an API key by ID",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "id": {
+            "name": "id",
+            "type": "number",
+            "required": true,
+            "description": "API key ID to delete",
+            "example": 1
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "API key deleted successfully",
+          "example": {
+            "deleted": true
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Invalid or missing API key ID"
+        },
+        {
+          "statusCode": 401,
+          "description": "Not authenticated"
+        },
+        {
+          "statusCode": 403,
+          "description": "API keys can only be deleted via session authentication"
+        },
+        {
+          "statusCode": 404,
+          "description": "API key not found or not owned by user"
+        }
+      ],
+      "notes": [
+        "API keys can only be deleted via session authentication, not with another API key",
+        "Users can only delete their own API keys"
       ]
     }
   ]
