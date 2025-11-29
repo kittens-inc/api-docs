@@ -1384,6 +1384,180 @@
         "API keys can only be deleted via session authentication, not with another API key",
         "Users can only delete their own API keys"
       ]
+    },
+    {
+      "id": "2fa-setup-begin",
+      "method": "POST",
+      "path": "/auth/2fa/setup-begin",
+      "category": "user",
+      "title": "Begin TOTP Setup",
+      "description": "Generate a TOTP secret and QR code for configuring an authenticator app.",
+      "authentication": true,
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "TOTP setup created",
+          "example": {
+            "success": true,
+            "data": {
+              "secret": "JBSWY3DPEHPK3PXP",
+              "qrCodeDataUrl": "data:image/png;base64,...",
+              "encryptedSecret": "<encrypted-secret-string>"
+            }
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Two-factor authentication is already enabled for this account"
+        },
+        {
+          "statusCode": 401,
+          "description": "Not authenticated"
+        }
+      ]
+    },
+    {
+      "id": "2fa-setup-complete",
+      "method": "POST",
+      "path": "/auth/2fa/setup-complete",
+      "category": "user",
+      "title": "Complete TOTP Setup",
+      "description": "Verify the TOTP code and enable two-factor authentication; returns one-time backup codes.",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "encryptedSecret": {
+            "name": "encryptedSecret",
+            "type": "string",
+            "required": true,
+            "description": "Encrypted TOTP secret returned by /auth/2fa/setup-begin",
+            "example": "<encrypted-secret-string>"
+          },
+          "verificationCode": {
+            "name": "verificationCode",
+            "type": "string",
+            "required": true,
+            "description": "6-digit code from the authenticator app",
+            "example": "123456"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Two-factor authentication enabled",
+          "example": {
+            "success": true,
+            "message": "Two-factor authentication has been enabled successfully",
+            "data": {
+              "backupCodes": [
+                "ABCD-EFGH",
+                "IJKL-MNOP",
+                "QRST-UVWX"
+              ]
+            }
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Invalid verification code or setup already completed"
+        },
+        {
+          "statusCode": 401,
+          "description": "Not authenticated"
+        }
+      ]
+    },
+    {
+      "id": "2fa-verify",
+      "method": "POST",
+      "path": "/auth/2fa/verify",
+      "category": "user",
+      "title": "Verify TOTP / Backup Code",
+      "description": "Verify a TOTP code or a one-time backup code during login or sensitive actions.",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "code": {
+            "name": "code",
+            "type": "string",
+            "required": true,
+            "description": "TOTP code (6 digits) or backup code",
+            "example": "123456"
+          },
+          "isBackupCode": {
+            "name": "isBackupCode",
+            "type": "boolean",
+            "required": false,
+            "description": "Set to true if providing a backup code",
+            "example": false
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Verification successful",
+          "example": {
+            "success": true
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Invalid code"
+        },
+        {
+          "statusCode": 401,
+          "description": "Two-factor authentication not enabled or session expired"
+        }
+      ]
+    },
+    {
+      "id": "2fa-disable",
+      "method": "POST",
+      "path": "/auth/2fa/disable",
+      "category": "user",
+      "title": "Disable Two-Factor Authentication",
+      "description": "Disable TOTP-based two-factor authentication after verifying password and code.",
+      "authentication": true,
+      "requestBody": {
+        "contentType": "application/json",
+        "schema": {
+          "password": {
+            "name": "password",
+            "type": "string",
+            "required": true,
+            "description": "Current account password for verification",
+            "example": "hunter2"
+          },
+          "verificationCode": {
+            "name": "verificationCode",
+            "type": "string",
+            "required": true,
+            "description": "6-digit TOTP code or backup code",
+            "example": "123456"
+          }
+        }
+      },
+      "responses": [
+        {
+          "statusCode": 200,
+          "description": "Two-factor authentication disabled",
+          "example": {
+            "success": true
+          }
+        },
+        {
+          "statusCode": 400,
+          "description": "Invalid input or verification failed"
+        },
+        {
+          "statusCode": 401,
+          "description": "Not authenticated"
+        }
+      ]
     }
   ]
 }
